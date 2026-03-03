@@ -1,6 +1,6 @@
 # API Documentation
 
-This document describes the current object-based API exposed by `BucketController`.
+This document describes the current object-based API exposed by `ExtractController`.
 
 ## Base URLs
 

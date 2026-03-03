@@ -1,10 +1,10 @@
 @startuml ExtractorService
 title ExtractorService v4 (09.01.26)
 
-class BucketController {
+class ExtractController {
     - bucketService: BucketService
 
-    + BucketController(bucketService: BucketService)
+    + ExtractController(bucketService: BucketService)
     + upload(string:local, string:remote): void
     + download(string:local, string:remote): void
     + update(string:local, string:remote): void
@@ -101,7 +101,7 @@ package Exception {
 }
 
 ' ---- Relationships ----
-BucketController --> BucketService : <<uses>>
+ExtractController --> BucketService : <<uses>>
 BucketService --> ExtractorServiceFactory : <<uses>>
 ExtractorServiceFactory --> ExtractorService : <<creates>>
 

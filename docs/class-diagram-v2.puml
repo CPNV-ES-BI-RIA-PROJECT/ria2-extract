@@ -21,9 +21,9 @@ class BucketService {
     + list(...)
 }
 
-class BucketController {
+class ExtractController {
     - bucketService: BucketService
-    + BucketController(bucketService: BucketService)
+    + ExtractController(bucketService: BucketService)
     + upload(...)
     + download(...)
     + delete(...)
@@ -40,5 +40,5 @@ ExtractorService <|.. GcpAdapterImpl
 
 ExtractorServiceFactory --> ExtractorService : <<creates>>
 BucketService --> ExtractorService : <<depends on>>
-BucketController --> BucketService : <<depends on>>
+ExtractController --> BucketService : <<depends on>>
 @enduml
