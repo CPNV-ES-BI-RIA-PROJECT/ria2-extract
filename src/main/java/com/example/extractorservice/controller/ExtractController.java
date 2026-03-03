@@ -28,12 +28,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping({ "/api", "/api/v1" })
-@Tag(name = "Bucket API", description = "API to manage bucket objects (upload, download, update, delete, list, share)")
-public class BucketController {
+@Tag(name = "Extractor API", description = "API to manage bucket objects (upload, download, update, delete, list, share)")
+public class ExtractController {
 
     private final ExtractorService extractorService;
 
-    public BucketController(ExtractorService extractorService) {
+    public ExtractController(ExtractorService extractorService) {
         this.extractorService = extractorService;
     }
 
