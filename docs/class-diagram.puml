@@ -1,0 +1,152 @@
+@startuml ExtractorService
+title ExtractorService v4 (09.01.26)
+
+class BucketController {
+    - bucketService: BucketService
+
+    + BucketController(bucketService: BucketService)
+    + upload(string:local, string:remote): void
+    + download(string:local, string:remote): void
+    + update(string:local, string:remote): void
+    + delete(string:remote, bool:recursive): void
+    + list(string:remote): string[]
+    + share(string:remote, int:expirationTime): string
+}
+
+class BucketService {
+    - factory: ExtractorServiceFactory
+    - adapter: ExtractorService
+
+    + BucketService(factory: ExtractorServiceFactory)
+    + upload(string:local, string:remote): void
+    + download(string:local, string:remote): void
+    + update(string:local, string:remote): void
+    + delete(string:remote, bool:recursive): void
+    + list(string:remote): string[]
+    + share(string:remote, int:expirationTime): string
+}
+
+class ExtractorServiceFactory {
+    - adapters: collection<ExtractorService>
+
+    + getAdapter(): ExtractorService
+}
+
+interface ExtractorService {
+    + upload(string:local, string:remote): void
+    + download(string:local, string:remote): void
+    + update(string:local, string:remote): void
+    + delete(string:remote, bool:recursive): void
+    + list(string:remote): string[]
+    + doestExists(string:remote): bool
+    + share(string:remote, int:expirationTime): string
+}
+
+class AzureAdapterImpl
+
+class GcpAdapterImpl {
+    - storage: Storage
+
+    + GcpAdapterImpl()
+    - GcpAdapterImpl(storage: Storage)
+    - createStorageClient(): Storage
+}
+
+class AwsAdapterImpl {
+    - s3Client: S3Client
+    - s3Presigner: S3Presigner
+
+    + AwsAdapterImpl()
+    - AwsAdapterImpl(s3Client: S3Client, s3Presigner: S3Presigner)
+    - createS3Client(): S3Client
+    - createS3Presigner(): S3Presigner
+}
+
+package Helper {
+    class AdapterHelper {}
+    class ConfigHelper {}
+}
+
+' ---- SDK ----
+package AWSSDK {
+    interface S3Client
+    interface S3Presigner
+    interface AwsClient
+}
+
+package GCPSDK {
+    interface Storage
+    interface Blob
+}
+
+package AZURESDK {}
+
+' ---- Exception ----
+package BucketException {
+    class BucketOperationException {
+        + BucketOperationException(message: String, cause: Exception)
+    }
+
+    class BucketObjectNotFoundException {
+        + BucketObjectNotFoundException(key: String)
+    }
+
+    class InvalidBucketPathException {
+        + InvalidBucketPathException(message: String)
+    }
+}
+
+package Exception {
+    class Exception
+}
+
+' ---- Relationships ----
+BucketController --> BucketService : <<uses>>
+BucketService --> ExtractorServiceFactory : <<uses>>
+ExtractorServiceFactory --> ExtractorService : <<creates>>
+
+ExtractorService <|.. AwsAdapterImpl
+ExtractorService <|.. GcpAdapterImpl
+ExtractorService <|.. AzureAdapterImpl
+
+BucketException <-- AwsAdapterImpl
+BucketException <-- GcpAdapterImpl
+BucketException <-- AzureAdapterImpl
+
+BucketException --|> Exception
+BucketObjectNotFoundException --|> Exception
+InvalidBucketPathException --|> Exception
+
+GcpAdapterImpl --> Helper : <<uses>>
+AwsAdapterImpl --> Helper : <<uses>>
+
+' Dependency Injection instead of instantiation
+AwsAdapterImpl --> S3Client : <<uses>>
+AwsAdapterImpl --> S3Presigner : <<uses>>
+S3Client ..|> AwsClient
+
+AwsAdapterImpl ..> AWSSDK
+GcpAdapterImpl ..> GCPSDK
+AzureAdapterImpl ..> AZURESDK
+
+' ---- Test ----
+class AwsAdapterImplTest <<test>> {
+    - s3Client: S3Client <<mock>>
+    - s3Presigner: S3Presigner <<mock>>
+    - awsAdapter: AwsAdapterImpl
+}
+
+class GcpAdapterImplTest <<test>> {
+    - storage: Storage <<mock>>
+    - gcpAdapter: GcpAdapterImpl
+}
+
+AwsAdapterImplTest --> AwsAdapterImpl : <<injects>>
+AwsAdapterImplTest --> S3Client : <<creates mock>>
+AwsAdapterImplTest --> S3Presigner : <<creates mock>>
+
+GcpAdapterImplTest --> GcpAdapterImpl : <<injects>>
+GcpAdapterImplTest --> Storage : <<creates mock>>
+GcpAdapterImplTest --> Blob : <<creates mock>>
+
+@enduml

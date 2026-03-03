@@ -1,179 +1,393 @@
-# Extract Service
+# Bucket Adapter
 
-Service Extract pour un projet ETL distribué.
-Ce service est responsable de la phase d’extraction des données depuis différentes sources et de leur dépôt dans un espace de stockage intermédiaire (bucket).
+## Description
 
----
+Bucket Adapter API is a Spring Boot application designed to provide **a unified interface for cloud storage buckets** (AWS S3, and in the future GCP, Azure, and other providers).
 
-## Responsabilités du service
+The application exposes a REST API that allows clients to:
+- upload files
+- download files
+- update existing files
+- delete files (single or recursive)
+- list bucket contents
+- check if an object exists
+- generate temporary shareable URLs
 
-Le service Extract est responsable de :
+The architecture is based on the **Adapter + Factory pattern**, enabling easy integration of new cloud providers without impacting the business logic.
 
-- Recevoir une demande d’extraction depuis l’Orchestrator via gRPC
-- Se connecter à une ou plusieurs sources de données (API, base de données, fichiers, etc.)
-- Extraire les données selon les paramètres fournis
-- Effectuer une validation minimale des données extraites
-- Stocker les données brutes dans un bucket (ex : stockage objet type S3/MinIO)
-- Retourner à l’Orchestrator les métadonnées nécessaires (ex : URL du fichier, identifiant de job, statut)
-- Gérer les erreurs et remonter les statuts d’échec
+## Getting Started
 
-Le service ne doit **pas** :
-- Transformer les données (responsabilité du service Transform)
-- Charger les données en base finale (responsabilité du service Load)
-- Gérer la logique métier globale du workflow (responsabilité de l’Orchestrator)
+### Documentation
 
----
+1. Generate documentation with Doxygen
 
-## Fonctionnalités principales à implémenter
-
-### 1. Endpoint gRPC
-
-- Méthode `StartExtract()`
-  - Paramètres :
-    - Identifiant du job
-    - Type/source des données
-    - Paramètres d’extraction (date range, filtres, etc.)
-  - Retour :
-    - Statut (SUCCESS / FAILURE)
-    - URL ou identifiant du fichier généré
-    - Métadonnées éventuelles
-
----
-
-### 2. Gestion des connexions aux sources
-
-- Connecteur(s) vers :
-  - Base de données (ex : PostgreSQL, MySQL…)
-  - API externe
-  - Fichiers (CSV, JSON…)
-- Gestion sécurisée des credentials
-- Timeout et gestion des erreurs réseau
-
----
-
-### 3. Gestion du stockage
-
-- Écriture des données brutes dans un bucket
-- Convention de nommage des fichiers, par exemple :
-  - `jobId/source/timestamp.ext`
-- Gestion des collisions
-- Possibilité de compression (optionnelle)
-
----
-
-### 4. Gestion des erreurs
-
-- Retry automatique configurable
-- Logging structuré
-- Remontée d’erreurs explicites à l’Orchestrator
-- Distinction entre :
-  - Erreur technique (connexion, timeout)
-  - Erreur fonctionnelle (données invalides)
-
----
-
-### 5. Observabilité
-
-- Logs corrélés par `jobId`
-- Métriques :
-  - Temps d’extraction
-  - Volume de données extrait
-  - Nombre d’erreurs
-- Healthcheck endpoint
-
----
-
-## Questions à discuter en équipe
-
-- Quelles sources de données doivent être supportées au MVP ?
-- Le format de sortie doit-il être unique (ex : toujours JSON) ?
-- Faut-il normaliser les données dès l’extraction ou garder un format totalement brut ?
-- Quelle est la taille maximale attendue des datasets ?
-- Doit-on supporter l’extraction incrémentale (delta) ?
-  - Une extraction incrémentale (ou delta) consiste à extraire uniquement les nouvelles données ou les données modifiées depuis la dernière extraction, au lieu de tout recharger à chaque fois.
-- Combien de retries sont autorisés avant échec définitif ?
-- Qui est responsable du nettoyage des fichiers temporaires ?
-- Le service doit-il être idempotent (même jobId → même résultat) ?
-  - Appeler plusieurs fois la même opération avec les mêmes paramètres produit le même résultat sans effet secondaire supplémentaire.
-- Faut-il prévoir un mécanisme de cache côté Extract ?
-- Les credentials sont-ils fournis par l’Orchestrator ou stockés côté Extract ?
-
----
-
-## Début d’architecture
-
-### Composants internes pressentis
-
-- `ExtractController`  
-  Point d’entrée gRPC
-
-- `ExtractService`  
-  Logique métier principale
-
-- `SourceConnector` (interface)  
-  Implémentations :
-  - `DatabaseConnector`
-  - `ApiConnector`
-  - `FileConnector`
-
-- `StorageClient`  
-  Gestion de l’écriture dans le bucket
-
-- `RetryManager`
-
-- `Logger / MonitoringAdapter`
-
----
-
-## Diagramme de séquence
-
-```mermaid
-sequenceDiagram
-    autonumber
-
-    participant orchestrator as Orchestrator
-    participant controller as Extract Controller (gRPC)
-    participant service as Extract Service
-    participant connector as Source Connector
-    participant storage as Storage Client (Bucket)
-
-    orchestrator->>controller: gRPC StartExtract(jobId, params)
-    activate controller
-    
-    controller->>service: runExtraction(jobId, params)
-    activate service
-
-    service->>connector: fetchData(params)
-    activate connector
-    connector-->>service: rawData
-    deactivate connector
-
-    service->>storage: save(rawData)
-    activate storage
-    storage-->>service: objectUrl
-    deactivate storage
-
-    service-->>controller: Success(objectUrl)
-    deactivate service
-
-    controller-->>orchestrator: SUCCESS(objectUrl)
-    deactivate controller
+```bash
+doxygen Doxyfile
 ```
 
-## Évolutions futures possibles
+The documentaion will be located in the `html` folder in `/docs` after generating in with Doxygen.
 
-- Support du streaming pour gros volumes
-- Extraction parallèle
-- Gestion multi-sources dans un même job
-- Versioning des datasets
-- Validation avancée des schémas
+2. View the documentation
 
-## Positionnement dans l’architecture globale
+```bash
+# Start a PHP server
+php -S localhost:8000 -t docs/html
+```
 
-Le service Extract :
+Go on [http://localhost:8000](http://localhost:8000) and look at the amazing doc generated by Doxygen
 
-- Est appelé uniquement par l’Orchestrator via gRPC
-- Dépose les données dans un bucket intermédiaire
-- Ne communique pas directement avec Transform ou Load
-- Est stateless (idéalement)
-- Peut être scalé horizontalement
+### Kanban video
+
+You can find the video explaining my Kanban here : https://youtu.be/Hqd9vmJnb0Q
+
+### Prerequisites
+
+The following tools and dependencies are required:
+
+* **Language / Runtime**
+  * Java JDK 21 `openjdk 21.0.9 2025-10-21`
+  * OpenJDK Runtime Environment `(Red_Hat-21.0.9.0.10-1) (build 21.0.9+10)`
+  * JVM compatible with Java 21
+  * PHP & Zend Engine for documentaion `PHP 8.5.3` + `Zend Engine v4.5.3`
+
+* **Frameworks & Libraries**
+  * Check [pom.xml](pom.xml)
+
+* **Build & Dependency Management**
+  * Maven
+
+* **IDE used**
+  * Visual Studio Code with [Java extension](https://marketplace.visualstudio.com/items?itemName=redhat.java)
+
+* **Supported OS (tested)**
+  * Linux (`Fedora Linux 42 (Workstation Edition)`)
+  * MacOS (`macOS Tahoe Version 26.3`)
+
+* **Cloud Providers**
+  * AWS S3 (currently implemented)
+  * Google Cloud Storage (currently implemented)
+
+* **Virtualization**
+  * Docker version 29.2.0, build 0b9d198 : **Only if you want to use the application with Docker**
+
+---
+
+### Configuration
+
+#### Environment variables / system properties
+
+The application relies on external configuration to select the storage provider and access the bucket.
+
+1. Copy the `.env.example` file to a `.env` file using this command : `cp .env.example .env`.
+2. Configure **Spring Configuration** variables in `.env` file :
+
+```bash
+# Spring Configuration
+SPRING_APPLICATION_NAME=yourappname
+SERVER_PORT=8080
+```
+
+#### AWS configuration
+
+Required variables:
+
+```bash
+AWS_REGION=your-region
+AWS_ACCESS_KEY_ID=your-access-key-id
+AWS_SECRET_ACCESS_KEY=your-secret-access-key
+```
+
+Provider selection:
+
+```bash
+PROVIDER_IMPL=AWS
+```
+
+#### GCP configuration
+
+Required variables :
+
+```bash
+GCP_PROJECT_ID=your-project-id
+GOOGLE_APPLICATION_CREDENTIALS=./path-to-credentials.json
+```
+
+> Note : You'll have to put the path of your `credentials.json` file in the `GOOGLE_APPLICATION_CREDENTIALS` environment variable.
+
+Provider selection:
+
+```bash
+PROVIDER_IMPL=GCP
+```
+
+## Deployment
+
+### On dev environment
+
+#### Build the project
+
+1. Remove all files generated by the previous build
+
+```bash
+mvn clean
+```
+
+2. Compile the project
+
+```bash
+mvn compile
+```
+
+3. Package the project to create JAR file
+
+```bash
+mvn package
+```
+
+> Result expected :
+
+```bash
+[...]
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 62, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ extractorservice ---
+[INFO] Building jar: /Users/ddieperi/Documents/git/cpnv/bi1/bucket-adapter/target/extractorservice-0.0.1-SNAPSHOT.jar
+[INFO] 
+[INFO] --- spring-boot:4.0.0:repackage (repackage) @ extractorservice ---
+[INFO] Replacing main artifact /Users/ddieperi/Documents/git/cpnv/bi1/bucket-adapter/target/extractorservice-0.0.1-SNAPSHOT.jar with repackaged archive, adding nested dependencies in BOOT-INF/.
+[INFO] The original artifact has been renamed to /Users/ddieperi/Documents/git/cpnv/bi1/bucket-adapter/target/extractorservice-0.0.1-SNAPSHOT.jar.original
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.545 s
+[INFO] Finished at: 2026-02-26T09:08:11+01:00
+[INFO] ------------------------------------------------------------------------
+```
+
+4. Install the project locally
+
+```bash
+mvn install
+```
+
+> Result of the install
+
+```bash
+[...]
+[INFO] --- checkstyle:3.3.1:check (checkstyle) @ extractorservice ---
+[INFO] Starting audit...
+Audit done.
+[INFO] You have 0 Checkstyle violations.
+[INFO] 
+[INFO] >>> spotbugs:4.9.3.2:check (spotbugs) > :spotbugs @ extractorservice >>>
+[INFO] 
+[INFO] --- spotbugs:4.9.3.2:spotbugs (spotbugs) @ extractorservice ---
+[INFO] Fork Value is true
+[INFO] Done SpotBugs Analysis....
+[WARNING] Unable to find a URL to the parent project. The parent menu will NOT be added.
+[INFO] Rendering content with org.apache.maven.skins:maven-fluido-skin:jar:2.0.0-M9 skin
+[INFO] 
+[INFO] <<< spotbugs:4.9.3.2:check (spotbugs) < :spotbugs @ extractorservice <<<
+[INFO] 
+[INFO] --- spotbugs:4.9.3.2:check (spotbugs) @ extractorservice ---
+[...]
+[INFO] 
+[INFO] --- jacoco:0.8.11:report (report) @ extractorservice ---
+[INFO] Loading execution data file /Users/ddieperi/Documents/git/cpnv/bi1/bucket-adapter/target/jacoco.exec
+[INFO] Analyzed bundle 'extractorservice' with 14 classes
+[INFO] 
+[INFO] --- jacoco:0.8.11:check (check) @ extractorservice ---
+[INFO] Loading execution data file /Users/ddieperi/Documents/git/cpnv/bi1/bucket-adapter/target/jacoco.exec
+[INFO] Analyzed bundle 'extractorservice' with 14 classes
+[INFO] All coverage checks have been met.
+[INFO] 
+[INFO] --- install:3.1.4:install (default-install) @ extractorservice ---
+Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/resolver/maven-resolver-util/1.9.22/maven-resolver-util-1.9.22.pom
+Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/resolver/maven-resolver-util/1.9.22/maven-resolver-util-1.9.22.pom (2.2 kB at 7.9 kB/s)
+Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/resolver/maven-resolver/1.9.22/maven-resolver-1.9.22.pom
+Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/resolver/maven-resolver/1.9.22/maven-resolver-1.9.22.pom (23 kB at 137 kB/s)
+Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/resolver/maven-resolver-api/1.9.22/maven-resolver-api-1.9.22.pom
+Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/resolver/maven-resolver-api/1.9.22/maven-resolver-api-1.9.22.pom (2.2 kB at 12 kB/s)
+Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/resolver/maven-resolver-util/1.9.22/maven-resolver-util-1.9.22.jar
+Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/resolver/maven-resolver-api/1.9.22/maven-resolver-api-1.9.22.jar
+Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/resolver/maven-resolver-api/1.9.22/maven-resolver-api-1.9.22.jar (157 kB at 575 kB/s)
+Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/resolver/maven-resolver-util/1.9.22/maven-resolver-util-1.9.22.jar (196 kB at 474 kB/s)
+[INFO] Installing /Users/ddieperi/Documents/git/cpnv/bi1/bucket-adapter/pom.xml to /Users/ddieperi/.m2/repository/com/example/extractorservice/0.0.1-SNAPSHOT/extractorservice-0.0.1-SNAPSHOT.pom
+[INFO] Installing /Users/ddieperi/Documents/git/cpnv/bi1/bucket-adapter/target/extractorservice-0.0.1-SNAPSHOT.jar to /Users/ddieperi/.m2/repository/com/example/extractorservice/0.0.1-SNAPSHOT/extractorservice-0.0.1-SNAPSHOT.jar
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  6.641 s
+[INFO] Finished at: 2026-02-26T09:18:09+01:00
+[INFO] ------------------------------------------------------------------------
+```
+
+#### Run tests
+
+1. Run tests
+
+```bash
+mvn test
+```
+
+2. Check for coverage
+
+```bash
+# Generate coverage report
+mvn jacoco:report
+
+# Show coverage report
+php -S localhost:8000 -t target/site/jacoco
+```
+
+#### Run the application
+```bash
+mvn spring-boot:run
+```
+
+### On integration environment
+
+#### Maven build
+
+```bash
+# Generate the maven wrapper (only one time if the wrapper don't exists)
+mvn -N wrapper:wrapper
+
+# Make the wrapper executable
+chmod +x mvnw
+
+# Build for production (with test execution)
+./mvnw -B clean verify
+```
+
+#### Docker build & run
+
+```bash
+# Build Docker image
+docker compose up --build
+```
+
+### How to use the application ?
+
+#### API
+
+1. To use the API you can read this [documentation](docs/api-documentation.md).
+2. You can also find the [online documentation](https://dieperid.github.io/bucket-adapter/) using Redoc to publish the API documentation.
+
+**How to update the API documentation ?**
+
+To update the documentation, first you'll have to start run the project using **maven** or **docker** :
+
+```bash
+# Maven
+mvn spring-boot:run
+
+# Docker
+docker compose up --build
+```
+
+When your app is running, you'll be able generate the API documentaion in `json` format or `yaml` format.
+
+> Note : Redoc use the `yaml` format to display the API documentation in web interface
+
+To generate run one if these command :
+
+```bash
+# JSON format
+curl http://localhost:8080/v3/api-docs > docs/openapi.json
+
+# YAML format
+curl http://localhost:8080/v3/api-docs > docs/openapi.yaml
+```
+
+## Directory structure
+
+```bash
+.
+├── docker-compose.yml
+├── Dockerfile
+├── .env.example
+├── .gcp-credentials.example.json
+├── checkstyle.xml
+├── Doxyfile
+├── mvnw
+├── mvnw.cmd
+├── pom.xml
+├── README.md
+├── setup-test-data.sh
+├── docs                                            # Documentation folder
+└── src                                             # Source code
+    ├── main
+    │   ├── java
+    │   │   └── com.example.extractorservice
+    │   │       ├── adapter
+    │   │       │   ├── ExtractorService.java
+    │   │       │   └── impl                        # Adapter implementation
+    │   │       ├── ExtractorServiceApplication.java
+    │   │       ├── config
+    │   │       ├── controller
+    │   │       ├── exception                       # Bucket exception
+    │   │       ├── factory
+    │   │       ├── helper                          # Helpers
+    │   │       └── service
+    │   └── resources
+    │       ├── application.properties
+    │       ├── static
+    │       └── templates
+    └── test                                        # Tests folder
+        └── java
+            └── com.example.extractorservice
+                ├── adapter
+                │   └── impl                        # Test folder of adapter implementation    
+                └── ExtractorServiceApplicationTests.java
+```
+
+## Collaborate
+
+### Proposing a new feature
+
+- Create an **issue** describing the feature or bug
+- Submit a **Pull Request** linked to the issue
+
+### Commit convention
+
+This project follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+
+Examples :
+
+```bash
+feat: add GCP bucket adapter
+fix: handle S3 presigner exception
+test: add unit tests for recursive delete
+```
+
+### Git branch workflow
+
+This projects use the [Gitflow workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow)
+
+Examples :
+
+```bash
+feature/implement-aws-s3
+release/1.0.0
+hotfix/1.2.1 or with description hotfix/1.2.1-critical-auth-bug
+```
+
+## License
+
+[MIT License](LICENSE)
+
+## Contact
+
+For questions or contributions:
+
+- GitHub Issues
+- Pull Request discussions
+
+For personal interactions:
+
+- Dieperink David
+- contact@daviddieperink.ch

@@ -1,0 +1,19 @@
+services:
+  bucket-adapter:
+    build:
+      context: .
+    image: ${IMAGE_NAME:-ria2-extractor-service:latest}
+    env_file:
+      - .env
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS_CONTAINER:-/gcp-credentials.json}
+      AWS_SHARED_CREDENTIALS_FILE: ${AWS_SHARED_CREDENTIALS_FILE_CONTAINER:-/.aws/credentials}
+    ports:
+      - "${HOST_PORT:-8080}:${SERVER_PORT:-8080}"
+    volumes:
+      - ./src:/app/src
+      - ./pom.xml:/app/pom.xml
+      - ./data:/app/data
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-./gcp-credentials.json}:${GOOGLE_APPLICATION_CREDENTIALS_CONTAINER:-/gcp-credentials.json}:ro
+      - ${AWS_SHARED_CREDENTIALS_FILE:-${HOME}/.aws/credentials}:${AWS_SHARED_CREDENTIALS_FILE_CONTAINER:-/.aws/credentials}:ro
+    restart: unless-stopped

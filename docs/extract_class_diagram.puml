@@ -1,0 +1,70 @@
+@startuml
+title ExtractorService
+
+' =============================
+' ADAPTER INTERFACE (TARGET)
+' =============================
+interface ExtractorService {
+    + upload(localSrc: string, remoteSrc: string): void
+    + download(localSrc: string, remoteSrc: string): void
+    + delete(remoteSrc: string, recursive: boolean): void
+    + list(remoteSrc: string): string[]
+}
+
+' =============================
+' STATIC FACTORY
+' =============================
+class ExtractorServiceFactory {
+    {static} + getAdapter(provider: CloudProvider): ExtractorService
+}
+
+' =============================
+' SERVICE LAYER
+' =============================
+class BucketService {
+    - adapter: ExtractorService
+    + BucketService(provider: CloudProvider)
+    + upload(...)
+    + download(...)
+    + delete(...)
+    + list(...)
+}
+
+' =============================
+' IMPLEMENTATIONS
+' =============================
+
+class AWSAdapterImpl {
+}
+
+class AzureAdapterImpl {
+}
+
+class GCPAdapterImpl {
+
+}
+
+' =============================
+' SDK CLIENTS
+' =============================
+class AWSSDK
+class AZURESDK
+class GCPSDK
+
+' =============================
+' RELATIONS
+' =============================
+
+ExtractorService <|.. AWSAdapterImpl
+ExtractorService <|.. AzureAdapterImpl
+ExtractorService <|.. GCPAdapterImpl
+
+ExtractorServiceFactory --> ExtractorService : <<creates>>
+
+BucketService --> ExtractorServiceFactory : uses
+
+AWSAdapterImpl --> AWSSDK : uses
+AzureAdapterImpl --> AZURESDK : uses
+GCPAdapterImpl --> GCPSDK : uses
+
+@enduml
