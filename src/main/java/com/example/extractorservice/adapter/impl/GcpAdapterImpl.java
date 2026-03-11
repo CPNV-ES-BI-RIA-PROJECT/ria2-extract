@@ -7,6 +7,7 @@ import com.example.extractorservice.adapter.ExtractorAdapter;
 import com.example.extractorservice.exception.BucketObjectNotFoundException;
 import com.example.extractorservice.exception.BucketOperationException;
 import com.example.extractorservice.helper.AdapterHelper;
+import com.example.extractorservice.helper.RemoteDownloadHelper;
 
 import static com.example.extractorservice.helper.ConfigHelper.getConfig;
 import static com.example.extractorservice.helper.AdapterHelper.validateExpiration;
@@ -69,6 +70,10 @@ public class GcpAdapterImpl implements ExtractorAdapter {
 
     @Override
     public byte[] download(final String remoteSrc) {
+        if (RemoteDownloadHelper.isHttpUrl(remoteSrc)) {
+            return RemoteDownloadHelper.download(remoteSrc);
+        }
+
         BucketSrc bucketSrc = AdapterHelper.extractBucketAndKey(remoteSrc);
 
         try {

@@ -10,6 +10,7 @@ import com.example.extractorservice.adapter.ExtractorAdapter;
 import com.example.extractorservice.exception.BucketObjectNotFoundException;
 import com.example.extractorservice.exception.BucketOperationException;
 import com.example.extractorservice.helper.AdapterHelper;
+import com.example.extractorservice.helper.RemoteDownloadHelper;
 
 import static com.example.extractorservice.helper.ConfigHelper.getConfig;
 import static com.example.extractorservice.helper.AdapterHelper.validateExpiration;
@@ -85,6 +86,10 @@ public class AwsAdapterImpl implements ExtractorAdapter {
 
     @Override
     public byte[] download(String remoteSrc) {
+        if (RemoteDownloadHelper.isHttpUrl(remoteSrc)) {
+            return RemoteDownloadHelper.download(remoteSrc);
+        }
+
         validateRemoteSrc(remoteSrc);
 
         BucketSrc bucketSrc = AdapterHelper.extractBucketAndKey(remoteSrc);
