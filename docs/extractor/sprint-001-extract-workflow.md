@@ -4,7 +4,7 @@
 
 For sprint 001, the Extract layer does only one thing:
 
-1. Receive a single public link from the Orchestrator
+1. Receive a single public link
 2. Download the file behind that link
 3. Upload the exact same file to the project bucket
 4. Return a new pre-signed URL pointing to the uploaded file
@@ -16,51 +16,31 @@ Extract does not:
 - call any external business API
 - apply any business rule
 - transform the content
+- use MQTT for this sprint
 
 If the input file is an ICS file, the output stored in the bucket is the same ICS file.
+
+## Sprint 001 Objective
+
+The goal of sprint 001 is to validate the minimal Extract responsibility:
+
+- accept a public or pre-signed URL as input
+- retrieve the raw file bytes
+- store the same bytes in the target bucket
+- make the uploaded file available through a new pre-signed URL
+
+This sprint is a technical relay only. It is not yet the final orchestrated ETL communication model.
 
 ## Functional Principle
 
 The Extract service is only a relay between:
 
-- the public source URL provided by the Orchestrator
+- the public source URL provided for the file
 - the internal storage bucket used by the ETL pipeline
 
 The workflow is:
 
-`download(input.uri) -> upload(bucketPath, byte[]) -> share(bucketPath, expirationTime)`
-
-## MQTT Contract Mapping
-
-For sprint 001, Extract must follow the ETL MQTT communication contract.
-
-### Consumed topic
-
-```text
-etl/{namespace}/extract/cmd/start
-```
-
-### Produced topics
-
-```text
-etl/{namespace}/extract/event/running
-etl/{namespace}/extract/event/completed
-etl/{namespace}/extract/event/failed
-```
-
-### Required message rules
-
-- every message must contain `schemaVersion`
-- every message must contain `job_id`
-- the input public link is carried in `input.uri`
-- output is returned in `output.uri`
-
-### Mapping for Extract
-
-- `input.uri`: source public URL received from the Orchestrator
-- `output.uri`: new pre-signed URL generated after upload to the bucket
-- `options.destinationPath`: target object path in the bucket
-- `options.expirationTime`: validity duration of the returned pre-signed URL
+`download(sourceUrl) -> upload(destinationPath, byte[]) -> share(destinationPath, expirationTime)`
 
 ## Sequence Diagram
 
@@ -68,184 +48,70 @@ etl/{namespace}/extract/event/failed
 sequenceDiagram
     autonumber
 
-    participant orchestrator as Orchestrator
-    participant broker as MQTT Broker
-    participant extract as Extract Service
+    participant caller as Caller / Script
+    participant extract as Extract API
     participant source as Public File URL
     participant bucket as Bucket Storage
 
-    orchestrator->>broker: Publish etl/{namespace}/extract/cmd/start
-    broker-->>extract: Consume start command
-
-    extract->>broker: Publish etl/{namespace}/extract/event/running
-    extract->>extract: Validate schemaVersion, job_id, input.uri
-
-    extract->>source: GET input.uri
+    caller->>extract: GET /api/objects/download?remote=sourceUrl
+    extract->>source: GET sourceUrl
     source-->>extract: raw file bytes
+    extract-->>caller: raw file bytes
 
-    extract->>bucket: upload(options.destinationPath, raw file bytes)
+    caller->>extract: POST /api/objects
+    extract->>bucket: upload(destinationPath, raw file bytes)
     bucket-->>extract: upload ok
+    extract-->>caller: 201 Created
 
-    extract->>bucket: share(options.destinationPath, options.expirationTime)
-    bucket-->>extract: presigned URL
-
-    extract->>broker: Publish etl/{namespace}/extract/event/completed
-    broker-->>orchestrator: Deliver completion event
-
-    opt Technical error
-        extract->>broker: Publish etl/{namespace}/extract/event/failed
-        broker-->>orchestrator: Deliver failure event
-    end
+    caller->>extract: POST /api/objects/share?remote=destinationPath&expirationTime=3600
+    extract->>bucket: share(destinationPath, expirationTime)
+    bucket-->>extract: pre-signed URL
+    extract-->>caller: shared URL
 ```
 
-## Command Payload
+## Sprint 001 Input
 
-The Orchestrator sends the start command on:
+For this sprint, the minimum useful input is:
+
+- `sourceUrl`: public or pre-signed URL of the source file
+- `destinationPath`: target object path in the bucket
+- `expirationTime`: validity duration of the returned shared URL
+
+Example values:
 
 ```text
-etl/{namespace}/extract/cmd/start
-```
-
-Recommended sprint 001 payload:
-
-```json
-{
-  "schemaVersion": "1.0",
-  "job_id": "job-2026-03-12-001",
-  "input": {
-    "uri": "https://public.example.com/calendar.ics"
-  },
-  "options": {
-    "destinationPath": "raw/calendar/job-2026-03-12-001/calendar.ics",
-    "expirationTime": 3600
-  }
-}
-```
-
-### Fields used by Extract
-
-- `schemaVersion`: contract version
-- `job_id`: unique identifier for traceability
-- `input.uri`: public source link
-- `options.destinationPath`: bucket object path
-- `options.expirationTime`: pre-signed URL duration in seconds
-
-### Minimum validation
-
-Extract checks only technical constraints:
-
-- `schemaVersion` is present
-- `job_id` is present
-- `input` is present
-- `input.uri` is present
-- `options.destinationPath` is present
-- `options.expirationTime` is valid
-
-Extract does not inspect the business content of the file.
-
-## Event Payloads
-
-### Running event
-
-Topic:
-
-```text
-etl/{namespace}/extract/event/running
-```
-
-Example:
-
-```json
-{
-  "schemaVersion": "1.0",
-  "job_id": "job-2026-03-12-001",
-  "progress": 0,
-  "stats": {
-    "items_processed": 0,
-    "durationMs": 0
-  }
-}
-```
-
-This event must be published at least once when the job starts.
-
-### Completed event
-
-Topic:
-
-```text
-etl/{namespace}/extract/event/completed
-```
-
-Example:
-
-```json
-{
-  "schemaVersion": "1.0",
-  "job_id": "job-2026-03-12-001",
-  "output": {
-    "uri": "https://bucket.example.com/raw/calendar/job-2026-03-12-001/calendar.ics?signature=abc"
-  }
-}
-```
-
-This is the main success output of Extract in sprint 001.
-
-### Failed event
-
-Topic:
-
-```text
-etl/{namespace}/extract/event/failed
-```
-
-Example:
-
-```json
-{
-  "schemaVersion": "1.0",
-  "job_id": "job-2026-03-12-001",
-  "error": {
-    "code": "EXTRACT_DOWNLOAD_ERROR",
-    "message": "Unable to download source file"
-  }
-}
+sourceUrl=https://public.example.com/calendar.ics
+destinationPath=my-bucket/raw/job-2026-03-12-001/calendar.ics
+expirationTime=3600
 ```
 
 ## Detailed Procedure
 
-### 1. Orchestrator publishes the start command
+### 1. Receive the public link
 
-The Orchestrator publishes a JSON payload on:
+The source file is made available through a public or pre-signed URL.
+
+Example:
 
 ```text
-etl/{namespace}/extract/cmd/start
+https://public.example.com/calendar.ics
 ```
 
-The only mandatory business input for sprint 001 is the public URL in `input.uri`.
+At sprint 001 level, this link can be provided manually.
 
-### 2. Extract consumes and validates the command
+### 2. Download the source file
 
-Extract reads the message and verifies:
+Extract downloads the file from the provided URL.
 
-- contract fields are present
-- the source URL exists in `input.uri`
-- the bucket destination exists in `options.destinationPath`
-- the expiration time exists in `options.expirationTime`
-
-At this point, Extract publishes a `running` event.
-
-### 3. Extract downloads the source file
-
-Extract calls:
+Logical action:
 
 ```text
-download(input.uri)
+download(sourceUrl)
 ```
 
 Result:
 
-- the file is downloaded as raw bytes
+- the file is retrieved as raw bytes
 - the content is kept exactly as received
 
 There is no:
@@ -255,12 +121,14 @@ There is no:
 - normalization
 - filtering
 
-### 4. Extract uploads the raw file to the bucket
+### 3. Upload the raw file to the bucket
 
-Extract calls:
+Extract uploads the downloaded bytes to the chosen bucket path.
+
+Logical action:
 
 ```text
-upload(options.destinationPath, fileBytes)
+upload(destinationPath, fileBytes)
 ```
 
 Result:
@@ -280,88 +148,101 @@ Example:
 raw/calendar/job-2026-03-12-001/calendar.ics
 ```
 
-### 5. Extract generates the new access URL
+### 4. Generate the new access URL
 
-Extract calls:
+Extract generates a new shared URL for the uploaded object.
+
+Logical action:
 
 ```text
-share(options.destinationPath, options.expirationTime)
+share(destinationPath, expirationTime)
 ```
 
 Result:
 
 - the bucket returns a new pre-signed URL
-- this URL is published in `output.uri`
+- this URL is the main output of sprint 001 for the Extract layer
 
-### 6. Extract publishes the final event
+## Manual REST Procedure
 
-On success, Extract publishes:
+For sprint 001, the workflow can be tested manually with the existing REST API.
 
-```text
-etl/{namespace}/extract/event/completed
+### Step 1. Download the file through Extract
+
+```bash
+curl --get \
+  --data-urlencode "remote=https://public.example.com/calendar.ics" \
+  http://localhost:8080/api/objects/download \
+  --output calendar.ics
 ```
 
-with:
+### Step 2. Upload the same file to the bucket
 
-- `schemaVersion`
-- `job_id`
-- `output.uri`
-
-On failure, Extract publishes:
-
-```text
-etl/{namespace}/extract/event/failed
+```bash
+curl -X POST \
+  -F "remote=my-bucket/raw/job-2026-03-12-001/calendar.ics" \
+  -F "file=@calendar.ics" \
+  http://localhost:8080/api/objects
 ```
 
-with:
+### Step 3. Request the shared URL
 
-- `schemaVersion`
-- `job_id`
-- `error.code`
-- `error.message`
+```bash
+curl -X POST --get \
+  --data-urlencode "remote=my-bucket/raw/job-2026-03-12-001/calendar.ics" \
+  --data-urlencode "expirationTime=3600" \
+  http://localhost:8080/api/objects/share
+```
 
-## Operational Procedure
+## Scripted Procedure
 
-### Orchestrator side
+The same workflow can be executed with the helper script:
 
-1. Put the source ICS file behind a public URL or temporary signed URL.
-2. Build the MQTT command payload using `schemaVersion`, `job_id`, `input.uri`, and `options`.
-3. Publish the command on `etl/{namespace}/extract/cmd/start`.
-4. Wait for either `etl/{namespace}/extract/event/completed` or `etl/{namespace}/extract/event/failed`.
+```bash
+bash scripts/manual_extract_workflow.sh \
+  "https://public.example.com/calendar.ics" \
+  "my-bucket/raw/job-2026-03-12-001/calendar.ics" \
+  3600 \
+  "http://localhost:8080/api"
+```
 
-### Extract side
+## Validation Rules
 
-1. Subscribe to `etl/{namespace}/extract/cmd/start`.
-2. Consume the command message.
-3. Publish `etl/{namespace}/extract/event/running`.
-4. Download the file from `input.uri`.
-5. Upload the downloaded bytes to `options.destinationPath`.
-6. Generate a new pre-signed URL with `options.expirationTime`.
-7. Publish `etl/{namespace}/extract/event/completed` with `output.uri`.
-8. If an error occurs, publish `etl/{namespace}/extract/event/failed`.
+For sprint 001, Extract verifies only technical constraints:
 
-### Downstream side
+- the source URL is present
+- the destination path is present
+- the destination path targets an object, not just a bucket root
+- the expiration time is valid
 
-1. Read the completion event.
-2. Recover `output.uri`.
-3. Pass this URI to the next ETL stage when required.
+Extract does not inspect the business content of the file.
+
+## Output
+
+The expected output of sprint 001 is a new pre-signed URL for the uploaded object.
+
+Example:
+
+```text
+https://bucket.example.com/raw/job-2026-03-12-001/calendar.ics?signature=abc
+```
 
 ## Acceptance Criteria
 
 Sprint 001 is complete for Extract if:
 
-- Extract consumes `etl/{namespace}/extract/cmd/start`
-- Extract publishes at least one `event/running`
-- Extract downloads the file from `input.uri`
+- Extract accepts one public link as input
+- Extract downloads the file successfully
 - Extract uploads the exact same file to the bucket
-- Extract publishes `event/completed` with `output.uri`
-- Extract publishes `event/failed` on technical errors
+- Extract returns a new pre-signed URL
 - Extract does not modify file content
+- Extract can be executed manually with the current REST API
 
 ## Out of Scope
 
 The following belongs to later stages or later sprints:
 
+- MQTT-based orchestration
 - reading ICS fields such as `UID`, `DTSTART`, or `DESCRIPTION`
 - converting ICS to JSON
 - generating SQL
