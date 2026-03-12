@@ -23,6 +23,7 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.stream.StreamSupport;
 
 @Component("GCP")
+@ConditionalOnProperty(name = "PROVIDER_IMPL", havingValue = "GCP")
 @Profile("!test")
 public class GcpAdapterImpl implements ExtractorAdapter {
 

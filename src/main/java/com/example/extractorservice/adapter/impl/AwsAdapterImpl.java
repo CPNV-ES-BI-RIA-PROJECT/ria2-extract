@@ -3,6 +3,7 @@
  */
 package com.example.extractorservice.adapter.impl;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -45,6 +46,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Component("AWS")
+@ConditionalOnProperty(name = "PROVIDER_IMPL", havingValue = "AWS")
 @Profile("!test")
 public class AwsAdapterImpl implements ExtractorAdapter {
 
