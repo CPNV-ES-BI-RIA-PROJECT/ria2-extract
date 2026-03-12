@@ -16,6 +16,7 @@ import com.example.extractorservice.factory.ExtractorServiceFactory;
 
 @ExtendWith(MockitoExtension.class)
 class ExtractorServiceWorkflowTest {
+    private static final int DEFAULT_WORKFLOW_EXPIRATION_TIME = 3600;
 
     @Mock
     private ExtractorServiceFactory factory;
@@ -36,19 +37,18 @@ class ExtractorServiceWorkflowTest {
     void executeWorkflow_shouldDownloadUploadAndShare() {
         String sourceUrl = "https://public.example.com/calendar.ics?signature=abc";
         String destinationRemote = "my-bucket/raw/job-2026-03-12-001/calendar.ics";
-        int expirationTime = 3600;
         byte[] content = "BEGIN:VCALENDAR".getBytes();
         String sharedUrl = "https://bucket.example.com/calendar.ics?signature=xyz";
 
         when(adapter.download(sourceUrl)).thenReturn(content);
-        when(adapter.share(destinationRemote, expirationTime)).thenReturn(sharedUrl);
+        when(adapter.share(destinationRemote, DEFAULT_WORKFLOW_EXPIRATION_TIME)).thenReturn(sharedUrl);
 
-        String result = extractorService.executeWorkflow(sourceUrl, destinationRemote, expirationTime);
+        String result = extractorService.executeWorkflow(sourceUrl, destinationRemote);
 
         InOrder inOrder = inOrder(adapter);
         inOrder.verify(adapter).download(sourceUrl);
         inOrder.verify(adapter).upload(destinationRemote, content);
-        inOrder.verify(adapter).share(destinationRemote, expirationTime);
+        inOrder.verify(adapter).share(destinationRemote, DEFAULT_WORKFLOW_EXPIRATION_TIME);
 
         assertEquals(sharedUrl, result);
     }

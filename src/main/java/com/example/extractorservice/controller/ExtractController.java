@@ -193,7 +193,6 @@ public class ExtractController {
      *
      * @param sourceUrl         public or pre-signed source URL
      * @param destinationRemote destination path in the bucket
-     * @param expirationTime    shared URL expiration in seconds
      * @return shared URL for the uploaded file
      */
     @Operation(summary = "Execute the complete sprint 1 extract workflow", description = "Downloads a file from a public or pre-signed URL, uploads it to the bucket, then returns the new shared URL")
@@ -203,11 +202,10 @@ public class ExtractController {
             @ApiResponse(responseCode = "404", description = "Source object not found", content = @Content),
             @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
     })
-    @PostMapping(value = "/workflows/extract", params = { "sourceUrl", "destinationRemote", "expirationTime" })
+    @PostMapping(value = "/workflows/extract", params = { "sourceUrl", "destinationRemote" })
     public String executeWorkflow(
             @Parameter(description = "Public or pre-signed source URL", required = true) @RequestParam String sourceUrl,
-            @Parameter(description = "Destination object path in the bucket", required = true) @RequestParam String destinationRemote,
-            @Parameter(description = "Expiration time in seconds", example = "3600") @RequestParam int expirationTime) {
-        return extractorService.executeWorkflow(sourceUrl, destinationRemote, expirationTime);
+            @Parameter(description = "Destination object path in the bucket", required = true) @RequestParam String destinationRemote) {
+        return extractorService.executeWorkflow(sourceUrl, destinationRemote);
     }
 }
