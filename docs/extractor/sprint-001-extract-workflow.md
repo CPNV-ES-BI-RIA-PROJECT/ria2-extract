@@ -45,7 +45,7 @@ The workflow is:
 This workflow can now be executed in two ways:
 
 - manually, by calling the existing endpoints one by one
-- directly, through a single endpoint that executes the complete chain
+- directly, through a single endpoint that executes the complete chain with the server-side default share expiration
 
 ## Sequence Diagram
 
@@ -74,12 +74,12 @@ sequenceDiagram
         bucket-->>extract: pre-signed URL
         extract-->>caller: shared URL
     else Single-call workflow endpoint
-        caller->>extract: POST /api/workflows/extract?sourceUrl=...&destinationRemote=...&expirationTime=...
+        caller->>extract: POST /api/workflows/extract?sourceUrl=...&destinationRemote=...
         extract->>source: GET sourceUrl
         source-->>extract: raw file bytes
         extract->>bucket: upload(destinationPath, raw file bytes)
         bucket-->>extract: upload ok
-        extract->>bucket: share(destinationPath, expirationTime)
+        extract->>bucket: share(destinationPath, defaultExpirationTime)
         bucket-->>extract: pre-signed URL
         extract-->>caller: shared URL
     end
@@ -91,7 +91,7 @@ For this sprint, the minimum useful input is:
 
 - `sourceUrl`: public or pre-signed URL of the source file
 - `destinationPath`: target object path in the bucket
-- `expirationTime`: validity duration of the returned shared URL
+- `expirationTime`: validity duration of the returned shared URL when using the manual `share` endpoint
 
 Example values:
 
@@ -178,6 +178,7 @@ Result:
 
 - the bucket returns a new pre-signed URL
 - this URL is the main output of sprint 001 for the Extract layer
+- for the single workflow endpoint, `expirationTime` is taken from server configuration instead of the request
 
 ## Manual REST Procedure
 
@@ -218,7 +219,6 @@ The same sprint 001 workflow can also be executed with one endpoint:
 curl -X POST --get \
   --data-urlencode "sourceUrl=https://public.example.com/calendar.ics" \
   --data-urlencode "destinationRemote=my-bucket/raw/job-2026-03-12-001/calendar.ics" \
-  --data-urlencode "expirationTime=3600" \
   http://localhost:8080/api/workflows/extract
 ```
 
@@ -227,6 +227,7 @@ Result:
 - Extract downloads the source file
 - Extract uploads the same bytes to the destination bucket path
 - Extract returns the final pre-signed URL directly
+- the share expiration is resolved server-side from `WORKFLOW_SHARE_EXPIRATION_TIME` and defaults to `3600`
 
 ## Scripted Procedure
 
@@ -247,7 +248,7 @@ For sprint 001, Extract verifies only technical constraints:
 - the source URL is present
 - the destination path is present
 - the destination path targets an object, not just a bucket root
-- the expiration time is valid
+- for the manual `share` endpoint, the expiration time is valid
 
 Extract does not inspect the business content of the file.
 
