@@ -32,6 +32,11 @@ DESTINATION_REMOTE="$2"
 EXPIRATION_TIME="${3:-3600}"
 API_BASE_URL="${4:-http://localhost:8080/api}"
 
+if [[ ! "${SOURCE_URL}" =~ ^https?:// ]]; then
+    echo "source_url must start with http:// or https://"
+    exit 1
+fi
+
 TEMP_FILE="$(mktemp /tmp/extract-workflow.XXXXXX)"
 
 cleanup() {
