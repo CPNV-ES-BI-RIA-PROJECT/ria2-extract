@@ -42,6 +42,11 @@ The workflow is:
 
 `download(sourceUrl) -> upload(destinationPath, byte[]) -> share(destinationPath, expirationTime)`
 
+This workflow can now be executed in two ways:
+
+- manually, by calling the existing endpoints one by one
+- directly, through a single endpoint that executes the complete chain
+
 ## Sequence Diagram
 
 ```mermaid
@@ -53,20 +58,31 @@ sequenceDiagram
     participant source as Public File URL
     participant bucket as Bucket Storage
 
-    caller->>extract: GET /api/objects/download?remote=sourceUrl
-    extract->>source: GET sourceUrl
-    source-->>extract: raw file bytes
-    extract-->>caller: raw file bytes
+    alt Manual 3-step flow
+        caller->>extract: GET /api/objects/download?remote=sourceUrl
+        extract->>source: GET sourceUrl
+        source-->>extract: raw file bytes
+        extract-->>caller: raw file bytes
 
-    caller->>extract: POST /api/objects
-    extract->>bucket: upload(destinationPath, raw file bytes)
-    bucket-->>extract: upload ok
-    extract-->>caller: 201 Created
+        caller->>extract: POST /api/objects
+        extract->>bucket: upload(destinationPath, raw file bytes)
+        bucket-->>extract: upload ok
+        extract-->>caller: 201 Created
 
-    caller->>extract: POST /api/objects/share?remote=destinationPath&expirationTime=3600
-    extract->>bucket: share(destinationPath, expirationTime)
-    bucket-->>extract: pre-signed URL
-    extract-->>caller: shared URL
+        caller->>extract: POST /api/objects/share?remote=destinationPath&expirationTime=3600
+        extract->>bucket: share(destinationPath, expirationTime)
+        bucket-->>extract: pre-signed URL
+        extract-->>caller: shared URL
+    else Single-call workflow endpoint
+        caller->>extract: POST /api/workflows/extract?sourceUrl=...&destinationRemote=...&expirationTime=...
+        extract->>source: GET sourceUrl
+        source-->>extract: raw file bytes
+        extract->>bucket: upload(destinationPath, raw file bytes)
+        bucket-->>extract: upload ok
+        extract->>bucket: share(destinationPath, expirationTime)
+        bucket-->>extract: pre-signed URL
+        extract-->>caller: shared URL
+    end
 ```
 
 ## Sprint 001 Input
@@ -194,6 +210,24 @@ curl -X POST --get \
   http://localhost:8080/api/objects/share
 ```
 
+## Single-Call Workflow Endpoint
+
+The same sprint 001 workflow can also be executed with one endpoint:
+
+```bash
+curl -X POST --get \
+  --data-urlencode "sourceUrl=https://public.example.com/calendar.ics" \
+  --data-urlencode "destinationRemote=my-bucket/raw/job-2026-03-12-001/calendar.ics" \
+  --data-urlencode "expirationTime=3600" \
+  http://localhost:8080/api/workflows/extract
+```
+
+Result:
+
+- Extract downloads the source file
+- Extract uploads the same bytes to the destination bucket path
+- Extract returns the final pre-signed URL directly
+
 ## Scripted Procedure
 
 The same workflow can be executed with the helper script:
@@ -237,6 +271,7 @@ Sprint 001 is complete for Extract if:
 - Extract returns a new pre-signed URL
 - Extract does not modify file content
 - Extract can be executed manually with the current REST API
+- Extract can be executed through the single workflow endpoint
 
 ## Out of Scope
 
