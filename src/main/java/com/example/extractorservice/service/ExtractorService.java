@@ -51,4 +51,10 @@ public class ExtractorService {
     public String share(String remote, int expirationTime) {
         return adapter.share(remote, expirationTime);
     }
+
+    public String executeWorkflow(String sourceUrl, String destinationRemote, int expirationTime) {
+        byte[] content = adapter.download(sourceUrl);
+        adapter.upload(destinationRemote, content);
+        return adapter.share(destinationRemote, expirationTime);
+    }
 }
