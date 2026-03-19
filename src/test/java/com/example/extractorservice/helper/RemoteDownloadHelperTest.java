@@ -77,6 +77,21 @@ class RemoteDownloadHelperTest {
                 () -> RemoteDownloadHelper.download(baseUrl + "/error"));
     }
 
+    @Test
+    void download_shouldFollowRedirects() {
+        byte[] expected = "image-bytes".getBytes(StandardCharsets.UTF_8);
+        server.createContext("/redirect", exchange -> {
+            exchange.getResponseHeaders().add("Location", baseUrl + "/final-file");
+            exchange.sendResponseHeaders(302, -1);
+            exchange.close();
+        });
+        server.createContext("/final-file", new FixedResponseHandler(200, expected));
+
+        byte[] result = RemoteDownloadHelper.download(baseUrl + "/redirect");
+
+        assertArrayEquals(expected, result);
+    }
+
     private static final class FixedResponseHandler implements HttpHandler {
 
         private final int statusCode;
