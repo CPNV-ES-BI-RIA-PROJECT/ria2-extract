@@ -22,6 +22,10 @@ import com.example.extractorservice.factory.ExtractorServiceFactory;
 class ExtractorServiceWorkflowTest {
     private static final int DEFAULT_WORKFLOW_EXPIRATION_TIME = 3600;
     private static final String DESTINATION_BUCKET = "my-bucket";
+    private static final String TIMESTAMPED_CALENDAR_PATTERN =
+            "my-bucket/\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-calendar\\.ics";
+    private static final String TIMESTAMPED_DEFAULT_FILE_PATTERN =
+            "my-bucket/\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-downloaded-file";
 
     @Mock
     private ExtractorServiceFactory factory;
@@ -53,7 +57,7 @@ class ExtractorServiceWorkflowTest {
         when(adapter.download(sourceUrl)).thenReturn(content);
         when(adapter.share(
                 argThat(remote -> remote != null
-                        && remote.matches("my-bucket/\\d{17}-calendar\\.ics")),
+                        && remote.matches(TIMESTAMPED_CALENDAR_PATTERN)),
                 eq(DEFAULT_WORKFLOW_EXPIRATION_TIME)))
                 .thenReturn(sharedUrl);
 
@@ -63,11 +67,11 @@ class ExtractorServiceWorkflowTest {
         inOrder.verify(adapter).download(sourceUrl);
         inOrder.verify(adapter).upload(
                 argThat(remote -> remote != null
-                        && remote.matches("my-bucket/\\d{17}-calendar\\.ics")),
+                        && remote.matches(TIMESTAMPED_CALENDAR_PATTERN)),
                 eq(content));
         inOrder.verify(adapter).share(
                 argThat(remote -> remote != null
-                        && remote.matches("my-bucket/\\d{17}-calendar\\.ics")),
+                        && remote.matches(TIMESTAMPED_CALENDAR_PATTERN)),
                 eq(DEFAULT_WORKFLOW_EXPIRATION_TIME));
 
         assertEquals(sharedUrl, result);
@@ -82,7 +86,7 @@ class ExtractorServiceWorkflowTest {
         when(adapter.download(sourceUrl)).thenReturn(content);
         when(adapter.share(
                 argThat(remote -> remote != null
-                        && remote.matches("my-bucket/\\d{17}-downloaded-file")),
+                        && remote.matches(TIMESTAMPED_DEFAULT_FILE_PATTERN)),
                 eq(DEFAULT_WORKFLOW_EXPIRATION_TIME)))
                 .thenReturn(sharedUrl);
 
@@ -92,11 +96,11 @@ class ExtractorServiceWorkflowTest {
         inOrder.verify(adapter).download(sourceUrl);
         inOrder.verify(adapter).upload(
                 argThat(remote -> remote != null
-                        && remote.matches("my-bucket/\\d{17}-downloaded-file")),
+                        && remote.matches(TIMESTAMPED_DEFAULT_FILE_PATTERN)),
                 eq(content));
         inOrder.verify(adapter).share(
                 argThat(remote -> remote != null
-                        && remote.matches("my-bucket/\\d{17}-downloaded-file")),
+                        && remote.matches(TIMESTAMPED_DEFAULT_FILE_PATTERN)),
                 eq(DEFAULT_WORKFLOW_EXPIRATION_TIME));
 
         assertEquals(sharedUrl, result);
