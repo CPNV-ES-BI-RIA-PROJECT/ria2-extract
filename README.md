@@ -85,6 +85,7 @@ The application relies on external configuration to select the storage provider 
 # Spring Configuration
 SPRING_APPLICATION_NAME=yourappname
 SERVER_PORT=8080
+DESTINATION_BUCKET=your-destination-bucket-name
 ```
 
 #### AWS configuration
