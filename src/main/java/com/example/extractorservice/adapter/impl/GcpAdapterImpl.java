@@ -7,6 +7,7 @@ import com.example.extractorservice.adapter.ExtractorAdapter;
 import com.example.extractorservice.exception.BucketObjectNotFoundException;
 import com.example.extractorservice.exception.BucketOperationException;
 import com.example.extractorservice.helper.AdapterHelper;
+import com.example.extractorservice.helper.RemoteDownloadHelper;
 
 import static com.example.extractorservice.helper.ConfigHelper.getConfig;
 import static com.example.extractorservice.helper.AdapterHelper.validateExpiration;
@@ -22,6 +23,7 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -33,6 +35,7 @@ import java.util.List;
 import java.util.stream.StreamSupport;
 
 @Component("GCP")
+@ConditionalOnProperty(name = "PROVIDER_IMPL", havingValue = "GCP")
 @Profile("!test")
 public class GcpAdapterImpl implements ExtractorAdapter {
 
@@ -69,6 +72,10 @@ public class GcpAdapterImpl implements ExtractorAdapter {
 
     @Override
     public byte[] download(final String remoteSrc) {
+        if (RemoteDownloadHelper.isHttpUrl(remoteSrc)) {
+            return RemoteDownloadHelper.download(remoteSrc);
+        }
+
         BucketSrc bucketSrc = AdapterHelper.extractBucketAndKey(remoteSrc);
 
         try {

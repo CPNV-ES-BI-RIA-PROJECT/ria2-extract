@@ -12,6 +12,8 @@ import java.util.List;
 @Service
 public class ExtractorService {
 
+    private static final int DEFAULT_WORKFLOW_EXPIRATION_TIME = 3600;
+
     private final ExtractorServiceFactory factory;
     private ExtractorAdapter adapter;
 
@@ -50,5 +52,11 @@ public class ExtractorService {
 
     public String share(String remote, int expirationTime) {
         return adapter.share(remote, expirationTime);
+    }
+
+    public String executeWorkflow(String sourceUrl, String destinationRemote) {
+        byte[] content = adapter.download(sourceUrl);
+        adapter.upload(destinationRemote, content);
+        return adapter.share(destinationRemote, DEFAULT_WORKFLOW_EXPIRATION_TIME);
     }
 }

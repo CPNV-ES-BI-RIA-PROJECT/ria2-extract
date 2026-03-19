@@ -3,6 +3,7 @@
  */
 package com.example.extractorservice.adapter.impl;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,7 @@ import com.example.extractorservice.adapter.ExtractorAdapter;
 import com.example.extractorservice.exception.BucketObjectNotFoundException;
 import com.example.extractorservice.exception.BucketOperationException;
 import com.example.extractorservice.helper.AdapterHelper;
+import com.example.extractorservice.helper.RemoteDownloadHelper;
 
 import static com.example.extractorservice.helper.ConfigHelper.getConfig;
 import static com.example.extractorservice.helper.AdapterHelper.validateExpiration;
@@ -44,6 +46,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Component("AWS")
+@ConditionalOnProperty(name = "PROVIDER_IMPL", havingValue = "AWS")
 @Profile("!test")
 public class AwsAdapterImpl implements ExtractorAdapter {
 
@@ -85,6 +88,10 @@ public class AwsAdapterImpl implements ExtractorAdapter {
 
     @Override
     public byte[] download(String remoteSrc) {
+        if (RemoteDownloadHelper.isHttpUrl(remoteSrc)) {
+            return RemoteDownloadHelper.download(remoteSrc);
+        }
+
         validateRemoteSrc(remoteSrc);
 
         BucketSrc bucketSrc = AdapterHelper.extractBucketAndKey(remoteSrc);

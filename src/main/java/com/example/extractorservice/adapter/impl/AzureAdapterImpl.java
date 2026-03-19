@@ -1,5 +1,6 @@
 package com.example.extractorservice.adapter.impl;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.example.extractorservice.adapter.ExtractorAdapter;
@@ -7,6 +8,7 @@ import com.example.extractorservice.adapter.ExtractorAdapter;
 import java.util.List;
 
 @Component("AZURE")
+@ConditionalOnProperty(name = "PROVIDER_IMPL", havingValue = "AZURE")
 public class AzureAdapterImpl implements ExtractorAdapter {
 
     @Override
