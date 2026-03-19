@@ -1,8 +1,8 @@
-# Bucket Adapter
+# Extractor Service
 
 ## Description
 
-Bucket Adapter API is a Spring Boot application designed to provide **a unified interface for cloud storage buckets** (AWS S3, and in the future GCP, Azure, and other providers).
+Extractor Service is a Spring Boot application designed to provide **a unified interface for bucket object operations and the sprint 001 extract workflow** on top of AWS S3 and Google Cloud Storage.
 
 The application exposes a REST API that allows clients to:
 - upload files
@@ -10,7 +10,6 @@ The application exposes a REST API that allows clients to:
 - update existing files
 - delete files (single or recursive)
 - list bucket contents
-- check if an object exists
 - generate temporary shareable URLs
 
 The architecture is based on the **Adapter + Factory pattern**, enabling easy integration of new cloud providers without impacting the business logic.
@@ -64,8 +63,8 @@ The following tools and dependencies are required:
   * MacOS (`macOS Tahoe Version 26.3`)
 
 * **Cloud Providers**
-  * AWS S3 (currently implemented)
-  * Google Cloud Storage (currently implemented)
+  * AWS S3
+  * Google Cloud Storage
 
 * **Virtualization**
   * Docker version 29.2.0, build 0b9d198 : **Only if you want to use the application with Docker**
@@ -311,21 +310,19 @@ curl http://localhost:8080/v3/api-docs > docs/openapi.yaml
 ├── docker-compose.yml
 ├── Dockerfile
 ├── .env.example
-├── .gcp-credentials.example.json
+├── gcp-credentials.example.json
 ├── checkstyle.xml
 ├── Doxyfile
 ├── mvnw
 ├── mvnw.cmd
 ├── pom.xml
 ├── README.md
-├── setup-test-data.sh
 ├── docs                                            # Documentation folder
 └── src                                             # Source code
     ├── main
     │   ├── java
     │   │   └── com.example.extractorservice
     │   │       ├── adapter
-    │   │       │   ├── ExtractorService.java
     │   │       │   └── impl                        # Adapter implementation
     │   │       ├── ExtractorServiceApplication.java
     │   │       ├── config
@@ -335,9 +332,7 @@ curl http://localhost:8080/v3/api-docs > docs/openapi.yaml
     │   │       ├── helper                          # Helpers
     │   │       └── service
     │   └── resources
-    │       ├── application.properties
-    │       ├── static
-    │       └── templates
+    │       └── application.properties
     └── test                                        # Tests folder
         └── java
             └── com.example.extractorservice
