@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.example.extractorservice.controller.request.ExtractWorkflowRequest;
 import com.example.extractorservice.service.ExtractorService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -191,8 +193,8 @@ public class ExtractController {
      * upload the same bytes to the bucket,
      * then return a new shared URL.
      *
-     * @param sourceUrl         public or pre-signed source URL
-     * @param destinationRemote destination path in the bucket
+     * @param request request body containing the public or pre-signed source
+     *                URL
      * @return shared URL for the uploaded file
      */
     @Operation(summary = "Execute the complete sprint 1 extract workflow", description = "Downloads a file from a public or pre-signed URL, uploads it to the bucket, then returns the new shared URL")
@@ -202,10 +204,12 @@ public class ExtractController {
             @ApiResponse(responseCode = "404", description = "Source object not found", content = @Content),
             @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
     })
-    @PostMapping(value = "/workflows/extract", params = { "sourceUrl", "destinationRemote" })
-    public String executeWorkflow(
-            @Parameter(description = "Public or pre-signed source URL", required = true) @RequestParam String sourceUrl,
-            @Parameter(description = "Destination object path in the bucket", required = true) @RequestParam String destinationRemote) {
-        return extractorService.executeWorkflow(sourceUrl, destinationRemote);
+    @PostMapping(value = "/workflows/extract", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public String executeWorkflow(@RequestBody ExtractWorkflowRequest request) {
+        if (request == null || request.url() == null || request.url().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "url is required");
+        }
+
+        return extractorService.executeWorkflow(request.url());
     }
 }
