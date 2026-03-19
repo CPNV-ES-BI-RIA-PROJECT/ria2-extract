@@ -57,10 +57,6 @@ public class ExtractorService {
         return adapter.list(remote);
     }
 
-    public boolean doesExists(String remote) {
-        return adapter.doesExists(remote);
-    }
-
     public String share(String remote, int expirationTime) {
         return adapter.share(remote, expirationTime);
     }
