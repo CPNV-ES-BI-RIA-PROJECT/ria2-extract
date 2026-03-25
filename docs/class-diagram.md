@@ -23,10 +23,14 @@ class ExtractController {
   +delete(String remote, boolean recursive)
   +list(String path) List~String~
   +share(String remote, int expirationTime) String
-  +executeWorkflow(ExtractWorkflowRequest request) String
+  +executeWorkflow(ExtractWorkflowRequest request) ExtractWorkflowResponse
 }
 
 class ExtractWorkflowRequest {
+  +String url
+}
+
+class ExtractWorkflowResponse {
   +String url
 }
 
@@ -95,6 +99,7 @@ class InvalidBucketPathException
 ExtractorServiceApplication ..> DotenvInitializer : initializes
 ExtractController --> ExtractorService : uses
 ExtractController ..> ExtractWorkflowRequest : consumes
+ExtractController ..> ExtractWorkflowResponse : returns
 ExtractorService --> ExtractorServiceFactory : uses
 ExtractorServiceFactory --> ExtractorAdapter : resolves
 ExtractorService --> ExtractorAdapter : delegates to

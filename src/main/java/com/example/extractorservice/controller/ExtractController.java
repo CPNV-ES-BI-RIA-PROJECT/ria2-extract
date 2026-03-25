@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.example.extractorservice.controller.request.ExtractWorkflowRequest;
+import com.example.extractorservice.controller.response.ExtractWorkflowResponse;
 import com.example.extractorservice.service.ExtractorService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -195,7 +196,7 @@ public class ExtractController {
      *
      * @param request request body containing the public or pre-signed source
      *                URL
-     * @return shared URL for the uploaded file
+     * @return JSON payload containing the shared URL for the uploaded file
      */
     @Operation(summary = "Execute the complete sprint 1 extract workflow", description = "Downloads a file from a public or pre-signed URL, uploads it to the bucket, then returns the new shared URL")
     @ApiResponses({
@@ -205,11 +206,11 @@ public class ExtractController {
             @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
     })
     @PostMapping(value = "/workflows/extract", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public String executeWorkflow(@RequestBody ExtractWorkflowRequest request) {
+    public ExtractWorkflowResponse executeWorkflow(@RequestBody ExtractWorkflowRequest request) {
         if (request == null || request.url() == null || request.url().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "url is required");
         }
 
-        return extractorService.executeWorkflow(request.url());
+        return new ExtractWorkflowResponse(extractorService.executeWorkflow(request.url()));
     }
 }

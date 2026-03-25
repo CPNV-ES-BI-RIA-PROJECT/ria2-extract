@@ -19,7 +19,7 @@ Both prefixes expose the same endpoints.
 | Delete object/prefix | DELETE | `/objects` | `remote` (String), `recursive` (boolean, optional, default `false`) | None | Empty body | `204 No Content` |
 | List objects | GET | `/objects` | `path` (String) | None | JSON array of strings | `200 OK` |
 | Share object | POST | `/objects/share` | `remote` (String), `expirationTime` (int, seconds) | None | Signed URL string | `200 OK` |
-| Execute extract workflow | POST | `/workflows/extract` | JSON body `{ "url": "..." }` | `application/json` | Signed URL string | `200 OK` |
+| Execute extract workflow | POST | `/workflows/extract` | JSON body `{ "url": "..." }` | `application/json` | JSON body `{ "url": "..." }` | `200 OK` |
 
 ## cURL Examples
 
@@ -71,7 +71,7 @@ curl -s -X POST "http://localhost:8080/api/v1/workflows/extract" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://public.example.com/calendar.ics"
-  }'
+  }' | jq
 ```
 
 ## Notes

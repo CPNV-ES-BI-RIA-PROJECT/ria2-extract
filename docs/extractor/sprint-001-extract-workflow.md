@@ -7,7 +7,7 @@ For sprint 001, the Extract layer does only one thing:
 1. Receive a single public link
 2. Download the file behind that link
 3. Upload the exact same file to the project bucket
-4. Return a new pre-signed URL pointing to the uploaded file
+4. Return a JSON payload containing a new pre-signed URL pointing to the uploaded file
 
 Extract does not:
 
@@ -81,7 +81,7 @@ sequenceDiagram
         bucket-->>extract: upload ok
         extract->>bucket: share(generatedDestinationPath, defaultExpirationTime)
         bucket-->>extract: pre-signed URL
-        extract-->>caller: shared URL
+        extract-->>caller: {"url":"shared URL"}
     end
 ```
 
@@ -229,6 +229,7 @@ Result:
 - Extract stores the object with the generated name `timestamp-originalFileName`
 - Extract returns the final pre-signed URL directly
 - the share expiration defaults to `3600` server-side
+- the response body format is `{ "url": "<generated-shared-url>" }`
 
 ## Scripted Procedure
 
