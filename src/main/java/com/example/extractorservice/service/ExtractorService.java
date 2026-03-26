@@ -3,6 +3,7 @@ package com.example.extractorservice.service;
 import static com.example.extractorservice.helper.ConfigHelper.getConfig;
 
 import java.net.URI;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -62,18 +63,31 @@ public class ExtractorService {
     }
 
     public String executeWorkflow(String sourceUrl) {
-        String destinationRemote = buildWorkflowDestinationRemote(sourceUrl);
-        byte[] content = adapter.download(sourceUrl);
-        adapter.upload(destinationRemote, content);
-        return adapter.share(destinationRemote, DEFAULT_WORKFLOW_EXPIRATION_TIME);
+        return executeWorkflow(sourceUrl, null).sharedUrl();
     }
 
-    private String buildWorkflowDestinationRemote(String sourceUrl) {
+    public WorkflowExecutionResult executeWorkflow(String sourceUrl, String workflowReference) {
+        long startedAt = System.nanoTime();
+        String destinationRemote = buildWorkflowDestinationRemote(sourceUrl, workflowReference);
+        byte[] content = adapter.download(sourceUrl);
+        adapter.upload(destinationRemote, content);
+        String sharedUrl = adapter.share(destinationRemote, DEFAULT_WORKFLOW_EXPIRATION_TIME);
+        long durationMs = Duration.ofNanos(System.nanoTime() - startedAt).toMillis();
+
+        return new WorkflowExecutionResult(destinationRemote, sharedUrl, durationMs, content.length);
+    }
+
+    private String buildWorkflowDestinationRemote(String sourceUrl, String workflowReference) {
         String normalizedBucket = normalizeWorkflowDestinationBucket();
         String filename = extractFilename(sourceUrl);
         String timestamp = WORKFLOW_TIMESTAMP_FORMATTER.format(Instant.now());
+        String normalizedWorkflowReference = normalizeWorkflowReference(workflowReference);
 
-        return normalizedBucket + "/" + timestamp + "-" + filename;
+        if (normalizedWorkflowReference.isBlank()) {
+            return normalizedBucket + "/" + timestamp + "-" + filename;
+        }
+
+        return normalizedBucket + "/" + timestamp + "-" + normalizedWorkflowReference + "-" + filename;
     }
 
     private String normalizeWorkflowDestinationBucket() {
@@ -103,5 +117,16 @@ public class ExtractorService {
 
         String filename = path.substring(path.lastIndexOf('/') + 1).trim();
         return filename.isEmpty() ? DEFAULT_WORKFLOW_FILE_NAME : filename;
+    }
+
+    private String normalizeWorkflowReference(String workflowReference) {
+        if (workflowReference == null || workflowReference.isBlank()) {
+            return "";
+        }
+
+        return workflowReference.trim()
+                .replaceAll("[^a-zA-Z0-9._-]+", "-")
+                .replaceAll("^-+", "")
+                .replaceAll("-+$", "");
     }
 }
