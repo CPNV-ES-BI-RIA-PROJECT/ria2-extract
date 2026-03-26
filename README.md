@@ -87,6 +87,36 @@ SERVER_PORT=8080
 DESTINATION_BUCKET=your-destination-bucket-name
 ```
 
+#### MQTT configuration
+
+MQTT is optional. When disabled, the REST API keeps working exactly as before.
+
+Required only when enabling MQTT:
+
+```bash
+MQTT_ENABLED=true
+MQTT_BROKER_URL=tcp://localhost:1883
+```
+
+Optional MQTT variables:
+
+```bash
+MQTT_NAMESPACE=stack1
+MQTT_SERVICE_NAME=extract
+MQTT_CLIENT_ID=
+MQTT_USERNAME=
+MQTT_PASSWORD=
+MQTT_QOS=1
+```
+
+Technical usage guide:
+
+- [MQTT Usage Guide](docs/mqtt/mqtt_usage.md)
+
+Compose note:
+
+- `docker-compose.yml` includes a `mosquitto` service and automatically overrides the app container broker URL to `tcp://mosquitto:1883`
+
 #### AWS configuration
 
 Required variables:
@@ -123,6 +153,41 @@ PROVIDER_IMPL=GCP
 ## Deployment
 
 ### On dev environment
+
+#### Run the project with Maven
+
+1. Make sure your `.env` file is configured for your storage provider.
+2. If you want MQTT enabled, start a broker first and keep `MQTT_BROKER_URL=tcp://localhost:1883` in `.env`. and check the [MQTT Usage Guide](docs/mqtt/mqtt_usage.md) documentation.
+3. Start the application:
+
+```bash
+mvn spring-boot:run
+```
+
+The REST API will be available on `http://localhost:8080` by default.
+
+If MQTT is enabled and the broker is temporarily unavailable, the application still starts and retries the broker connection in the background.
+
+#### Run the project with Docker Compose
+
+The repository includes:
+
+- the extractor service
+- a Mosquitto MQTT broker
+
+Start everything with:
+
+```bash
+docker compose up --build
+```
+
+Stop everything with:
+
+```bash
+docker compose down
+```
+
+With Docker Compose, the app container automatically uses `tcp://mosquitto:1883` for MQTT internally.
 
 #### Build the project
 
