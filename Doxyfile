@@ -1,0 +1,36 @@
+# --- Project Information ---
+PROJECT_NAME           = "Bucket Adapter"
+PROJECT_BRIEF          = "A brief description of MyProject"
+PROJECT_LOGO           = ""
+OUTPUT_DIRECTORY       = docs
+
+# --- Input Sources ---
+INPUT                  = .
+FILE_PATTERNS          = *.cpp *.h *.hpp *.py *.java *.js *.ts *.go *.cs
+RECURSIVE              = YES
+
+# --- Build Options ---
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_METHODS  = YES
+
+# --- Documentation Output ---
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+# --- Diagrams & Graphs ---
+HAVE_DOT               = YES
+DOT_PATH               = 
+DOT_IMAGE_FORMAT       = svg
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+CLASS_DIAGRAMS         = YES
+UML_LOOK               = YES
+DOT_GRAPH_MAX_NODES    = 50
+INTERACTIVE_SVG        = YES
+
+
+# --- PlantUML Integration ---
+PLANTUML_JAR_PATH      = /usr/share/java/plantuml.jar
