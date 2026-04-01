@@ -29,7 +29,7 @@ Add the MQTT configuration:
 
 ```bash
 MQTT_ENABLED=true
-MQTT_BROKER_URL=tcp://localhost:1883
+MQTT_BROKER_URL=mqtt://localhost:1883
 MQTT_NAMESPACE=stack1
 MQTT_SERVICE_NAME=extract
 MQTT_QOS=1
@@ -64,7 +64,7 @@ For a local Maven run, the app must connect to the broker through your host mach
 
 ```bash
 MQTT_ENABLED=true
-MQTT_BROKER_URL=tcp://localhost:1883
+MQTT_BROKER_URL=mqtt://localhost:1883
 MQTT_NAMESPACE=stack1
 MQTT_SERVICE_NAME=extract
 MQTT_QOS=1
@@ -85,7 +85,7 @@ If the broker is not yet available, the app still starts and retries the MQTT co
 The repository `docker-compose.yml` now includes:
 
 - a `mosquitto` service listening on port `1883`
-- the extract service configured to use `tcp://mosquitto:1883` inside the Docker network
+- the extract service configured to use `mqtt://mosquitto:1883` inside the Docker network
 
 ### 1. Configure `.env`
 
@@ -93,19 +93,19 @@ You can keep a host-oriented MQTT URL for Maven usage:
 
 ```bash
 MQTT_ENABLED=true
-MQTT_BROKER_URL=tcp://localhost:1883
+MQTT_BROKER_URL=mqtt://localhost:1883
 ```
 
 Docker Compose overrides the app container value automatically with:
 
 ```bash
-MQTT_BROKER_URL=tcp://mosquitto:1883
+MQTT_BROKER_URL=mqtt://mosquitto:1883
 ```
 
 You may optionally define:
 
 ```bash
-MQTT_BROKER_URL_CONTAINER=tcp://mosquitto:1883
+MQTT_BROKER_URL_CONTAINER=mqtt://mosquitto:1883
 MQTT_HOST_PORT=1883
 ```
 
@@ -164,6 +164,11 @@ The service expects JSON with:
 - `job_id`: unique identifier for the workflow
 - `input.uri`: source public or pre-signed URL
 - `options`: optional object, currently ignored by the app
+
+Broker URL note:
+
+- use `mqtt://host:port` in your configuration
+- the app internally normalizes that URL to the protocol format expected by the Java MQTT client library
 
 Example:
 

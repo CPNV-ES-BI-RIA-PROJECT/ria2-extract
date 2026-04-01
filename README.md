@@ -95,7 +95,7 @@ Required only when enabling MQTT:
 
 ```bash
 MQTT_ENABLED=true
-MQTT_BROKER_URL=tcp://localhost:1883
+MQTT_BROKER_URL=mqtt://localhost:1883
 ```
 
 Optional MQTT variables:
@@ -115,7 +115,7 @@ Technical usage guide:
 
 Compose note:
 
-- `docker-compose.yml` includes a `mosquitto` service and automatically overrides the app container broker URL to `tcp://mosquitto:1883`
+- `docker-compose.yml` includes a `mosquitto` service and automatically overrides the app container broker URL to `mqtt://mosquitto:1883`
 
 #### AWS configuration
 
@@ -157,7 +157,7 @@ PROVIDER_IMPL=GCP
 #### Run the project with Maven
 
 1. Make sure your `.env` file is configured for your storage provider.
-2. If you want MQTT enabled, start a broker first and keep `MQTT_BROKER_URL=tcp://localhost:1883` in `.env`. and check the [MQTT Usage Guide](docs/mqtt/mqtt_usage.md) documentation.
+2. If you want MQTT enabled, start a broker first and keep `MQTT_BROKER_URL=mqtt://localhost:1883` in `.env`. and check the [MQTT Usage Guide](docs/mqtt/mqtt_usage.md) documentation.
 3. Start the application:
 
 ```bash
@@ -187,7 +187,7 @@ Stop everything with:
 docker compose down
 ```
 
-With Docker Compose, the app container automatically uses `tcp://mosquitto:1883` for MQTT internally.
+With Docker Compose, the app container automatically uses `mqtt://mosquitto:1883` for MQTT internally.
 
 #### Build the project
 

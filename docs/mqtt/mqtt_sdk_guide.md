@@ -13,6 +13,12 @@ This guide is aligned with `COMMUNICATION_CONTRACT.md`:
 
 ## Compact example (Paho)
 
+Configuration note:
+
+- use `mqtt://host:port` in app configuration if you want a user-facing broker URL
+- the app can normalize that to the transport scheme required by the Java client library
+- direct low-level Paho examples still use `tcp://` because that is the protocol string expected by `MqttClient`
+
 ```java
 import com.fasterxml.jackson.databind.*;
 import org.eclipse.paho.client.mqttv3.*;

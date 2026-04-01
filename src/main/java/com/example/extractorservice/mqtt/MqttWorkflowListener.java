@@ -67,7 +67,7 @@ public class MqttWorkflowListener {
 
         try {
             client = new MqttClient(
-                    mqttProperties.getBrokerUrl().trim(),
+                    mqttProperties.resolvedBrokerUrl(),
                     resolveClientId());
             client.setCallback(new WorkflowMqttCallback());
         } catch (MqttException e) {

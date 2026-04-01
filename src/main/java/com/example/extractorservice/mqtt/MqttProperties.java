@@ -91,6 +91,24 @@ public class MqttProperties {
         }
     }
 
+    public String resolvedBrokerUrl() {
+        if (brokerUrl == null) {
+            return null;
+        }
+
+        String normalizedBrokerUrl = brokerUrl.trim();
+
+        if (normalizedBrokerUrl.startsWith("mqtt://")) {
+            return "tcp://" + normalizedBrokerUrl.substring("mqtt://".length());
+        }
+
+        if (normalizedBrokerUrl.startsWith("mqtts://")) {
+            return "ssl://" + normalizedBrokerUrl.substring("mqtts://".length());
+        }
+
+        return normalizedBrokerUrl;
+    }
+
     public String startCommandTopic() {
         return topic("cmd", "start");
     }
